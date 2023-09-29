@@ -1,213 +1,109 @@
+var PLAY = 1
+var END = 0
+var gameState = PLAY
 var boy, boy_running
-var ground, grounImage
 var obstaclesGroup, obstacle1, obstacle2, obstacle3
-var energyGroup, energyImage
-var cashGroup, cashImage
-var waterGroup, waterImage
-var cokeGroup, cokeImage
+var ground, groundImg
+var gameOver, gameOverImg
+var invisibleGround
 var score
-var PLAY = 1;
-var END = 0;
-var gameState = PLAY;
-var treasureCollection = 0;
-
 
 function preload(){
-    
-    boy_running = loadAnimation("boy1.png","boy2.png","boy3.png","boy4.png");
-   
-    groundImage = loadImage("road.png")
-    
-    cashImage = loadImage("cash.png")
-    waterImage = loadImage("water.png")
-    energyImage = loadImage("energy.png")
-    cokeImage = loadImage("coke.png")
+boy_running = loadAnimation("boy1.png","boy2.png","boy3.png","boy4.png")
 
-    obstacle1 = loadImage("obstacle1.png")
-    obstacle2 = loadImage("obstacle2.png")
-    obstacle3 = loadImage("obstacle3.png")
+groundImg = loadImage("road.png")
+
+obstacle1 = loadImage("obstacle1.png")
+obstacle2 = loadImage("obstacle3.png")
+
+gameOverImg = loadImage("gameover.gif")
 }
 
 function setup() {
- createCanvas(600,200)
+    createCanvas(windowWidth,windowHeight)
 
- boy = createSprite(50,160,20,50);
- boy.addAnimation("running", boy_running);
+    boy = createSprite(50,height-20,20,50)
+    boy.addAnimation("running", boy_running)
+    boy.scale = 0.5
 
-ground = createSprite(200,180,400,20);
-ground.addImage("ground",groundImage);
-ground.x = ground.width /2;
+    ground = createSprite(width/2,height-20,width,20)
+    //ground.addImage("ground", groundImg)
+    ground.x = ground.width/2
 
-obstaclesGroup = createGroup()
+    gameOver = createSprite(width/2,height/2)
+    gameOver.addImage(gameOverImg)
 
-cashGroup = new Group()
-waterGroup = new Group()
-cokeGroup = new Group()
-energyGroup = new Group()
+    gameOver.scale = 0.5
+    gameOver.visible = false
 
-score = 0
+    invisibleGround = createSprite(width/2,height-10,width,10);
+    invisibleGround.visible = false;
 
+    obstaclesGroup = new Group()
+
+    score = 0
 }
 
 function draw() {
-    background(180);
-  //displaying score
-  text("Score: "+ score, 500,50);
-  
-  
-  if(gameState === PLAY){
-    
-    ground.velocityX = -(4 + 3* score/100)
-    //scoring
+ background(groundImg)
+ text("Score,"+score, 500,50)
+
+ if(gameState === PLAY){
     score = score + Math.round(getFrameRate()/60);
-    
+    ground.velocityX = -(6 + 3*score/200);
+  
+    if(keyDown("space") && boy.y >= 159) {
+      boy.velocityY = -12;
+    }
+  
+    boy.velocityY = boy.velocityY + 0.8
+  
     if (ground.x < 0){
       ground.x = ground.width/2;
-    }
+    } 
 
-    createCash()
-    createWater()
-    createEnergy()
-    createCoke()
-    
-    //jump when the space key is pressed
-    if(keyDown("space")&& boy.y >= 100) {
-        boy.velocityY = -12;
-        //jumpSound.play();
-    }
-    
-    //add gravity
-    boy.velocityY = boy.velocityY + 0.8
-    
-    //spawn obstacles on the ground
-    spawnObstacles();
+    spawnObstacles()
 
-
-    if (cashGroup.isTouching(boy)) {
-        cashG.destroyEach();
-        treasureCollection = treasureCollection + 100;
-      }
-      else if (waterGroup.isTouching(boy)) {
-        waterGroup.destroyEach();
-        treasureCollection = treasureCollection + 50;
-        
-      }
-      else if (energyGroup.isTouching(boy)) {
-        energyGroup.destroyEach();
-        treasureCollection = treasureCollection + 50;
-      }
-      else if(cokeGroup.isTouching(boy)) {
-        jewelryG.destroyEach();
-        treasureCollection= treasureCollection - 100;
-        
-      }
-    else if(obstaclesGroup.isTouching(boy)){
-        boy.velocityY = -12;
-        //jumpSound.play();
+    if(obstaclesGroup.isTouching(boy)){
         gameState = END;
-       // dieSound.play()
-      
     }
-  }
-   else if (gameState === END) {
-     
-      ground.velocityX = 0;
-      boy.velocityY = 0
-      
-      stroke("yellow");
-      fill("yellow");
-      textSize(30);
-      text("Game Over", 230,250)
+ }
 
-      //set lifetime of the game objects so that they are never destroyed
+ else if (gameState === END) {
+    gameOver.visible = true;
+    
+    //set velcity of each game object to 0
+    ground.velocityX = 0;
+    boy.velocityY = 0;
+    obstaclesGroup.setVelocityXEach(0);
     obstaclesGroup.setLifetimeEach(-1);
-     
-     obstaclesGroup.setVelocityXEach(0);    
-   }
-  
- 
-  //stop trex from falling down
-  //trex.collide(invisibleGround);
-  
- // if(mousePressedOver(restart)) {
-   //   reset();
-   
-   drawSprites();
-   textSize(20);
-   fill(255);
-   text("Treasure:"+ treasureCollection,10,30);
+    
+  }
 
+  boy.collide(invisibleGround);  
+  drawSprites();
 }
 
 function spawnObstacles(){
-    if (frameCount % 60 === 0){
-      var obstacle = createSprite(600,165,10,40);
-      obstacle.velocityX = -(6 + score/100);
-      
-       //generate random obstacles
-       var rand = Math.round(random(1,6));
-       switch(rand) {
-         case 1: obstacle.addImage(obstacle1);
-                 break;
-         case 2: obstacle.addImage(obstacle2);
-                 break;
-         case 3: obstacle.addImage(obstacle3);
-                 break;
-         default: break;
-       }
-      
-       //assign scale and lifetime to the obstacle           
-       obstacle.scale = 0.5;
-       obstacle.lifetime = 300;
-      
-      //add each obstacle to the group
-       obstaclesGroup.add(obstacle);
+    if(frameCount % 60 === 0) {
+        var obstacle = createSprite(600,height-40,20,30);
+        //obstacle.debug = true;
+        obstacle.velocityX = -(6 + 3*score/100);
+        obstacle.scale = 0.5
+        
+        //generate random obstacles
+        var rand = Math.round(random(1,6));
+        switch(rand) {
+          case 1: obstacle.addImage(obstacle1);
+                  break;
+          case 2: obstacle.addImage(obstacle2);
+                  break;
+           default: break;
+        }
+        obstaclesGroup.add(obstacle)
+        obstacle.scale = 0.10;
+        obstacle.lifetime = 300;
+        obstaclesGroup.add(obstacle);
     }
-   }
-
-   function createCash() {
-    if (World.frameCount % 200 == 0) {
-    var cash = createSprite(Math.round(random(50, 350),40, 10, 10));
-    cash.addImage(cashImage);
-    cash.scale=0.12;
-    cash.velocityY = 3;
-    cash.lifetime = 150;
-    cashGroup.add(cash);
-    }
-  }
-  
-  function createWater() {
-    if (World.frameCount % 320 == 0) {
-    var water = createSprite(Math.round(random(50, 350),40, 10, 10));
-    water.addImage(waterImage);
-    water.scale=0.03;
-    water.velocityY = 3;
-    water.lifetime = 150;
-    waterGroup.add(water);
-  }
-  }
-  
-  function createEnergy() {
-    if (World.frameCount % 410 == 0) {
-    var energy = createSprite(Math.round(random(50, 350),40, 10, 10));
-    energy.addImage(energyImage);
-    energy.scale=0.13;
-    energy.velocityY = 3;
-    energy.lifetime = 150;
-    energyGroup.add(energy);
-    }
-  }
-
-  function createCoke() {
-    if (World.frameCount % 410 == 0) {
-    var coke = createSprite(Math.round(random(50, 350),40, 10, 10));
-    coke.addImage(cokeImage);
-    coke.scale=0.13;
-    coke.velocityY = 3;
-    coke.lifetime = 150;
-    cokeGroup.add(coke);
-    }
-  }
-
-
+}
  
